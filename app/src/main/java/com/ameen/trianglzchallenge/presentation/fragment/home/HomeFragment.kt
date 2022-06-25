@@ -17,6 +17,7 @@ import com.ameen.trianglzchallenge.core.util.RECYCLER_VIEW_GRID_SPAN_SIZE
 import com.ameen.trianglzchallenge.core.wrapper.ResultWrapper
 import com.ameen.trianglzchallenge.databinding.FragmentHomeBinding
 import com.ameen.trianglzchallenge.presentation.adapter.HomeMovieAdapter
+import com.ameen.trianglzchallenge.presentation.adapter.HomeMovieLoadStateAdapter
 import com.ameen.trianglzchallenge.presentation.extention.hide
 import com.ameen.trianglzchallenge.presentation.extention.show
 import dagger.hilt.android.AndroidEntryPoint
@@ -71,6 +72,7 @@ class HomeFragment : Fragment() {
         }
     }
 
+
     private fun initRecyclerView() {
 
         if (!this::recAdapter.isInitialized) {
@@ -78,7 +80,10 @@ class HomeFragment : Fragment() {
             recAdapter = HomeMovieAdapter()
 
             binding.topMovieRecycler.apply {
-                adapter = recAdapter
+                adapter = recAdapter.withLoadStateHeaderAndFooter(
+                    header = HomeMovieLoadStateAdapter { recAdapter.retry() },
+                    footer = HomeMovieLoadStateAdapter { recAdapter.retry() }
+                )
                 layoutManager =
                     GridLayoutManager(requireContext(), RECYCLER_VIEW_GRID_SPAN_SIZE)
             }
@@ -105,7 +110,7 @@ class HomeFragment : Fragment() {
                         else -> null
                     }
                     errorState?.let {
-                        Toast.makeText(requireContext(), it.error.toString(), Toast.LENGTH_LONG)
+                        Toast.makeText(requireContext(), it.error.message, Toast.LENGTH_LONG)
                             .show()
                     }
                 }
