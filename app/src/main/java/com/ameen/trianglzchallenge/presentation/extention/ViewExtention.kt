@@ -5,10 +5,10 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.Toast
+import com.ameen.trianglzchallenge.R
 import com.ameen.trianglzchallenge.core.util.IMAGE_BASE_URL
 import com.squareup.picasso.Callback
 import com.squareup.picasso.Picasso
-import java.lang.Exception
 
 fun View.hide() {
     this.visibility = View.GONE
@@ -25,7 +25,8 @@ fun Context.showToast(text: String) {
 fun ImageView.loadImageFromUrl(url: String, loadingProgressBar: ProgressBar) {
     Picasso.get()
         .load(IMAGE_BASE_URL + url)
-        .into(this, object : Callback{
+        .error(R.drawable.ic_error)
+        .into(this, object : Callback {
             override fun onSuccess() {
                 loadingProgressBar.hide()
             }

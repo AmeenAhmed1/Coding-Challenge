@@ -3,4 +3,8 @@
     <string name="top_rated">Top rated</string>
     <string name="most_popular">Most popular</string>
     <string name="sort_by">Sort by:</string>
+
+    <string name="no_internet">No Internet Connection, Please try again.</string>
+    <string name="some_error">Some thing wrong happened, Please try again.</string>
+    <string name="retry">Retry</string>
 </resources>

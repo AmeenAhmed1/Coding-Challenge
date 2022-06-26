@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -17,11 +16,13 @@ import com.ameen.trianglzchallenge.core.util.RECYCLER_VIEW_GRID_SPAN_SIZE
 import com.ameen.trianglzchallenge.core.wrapper.ResultWrapper
 import com.ameen.trianglzchallenge.databinding.FragmentHomeBinding
 import com.ameen.trianglzchallenge.presentation.adapter.HomeMovieAdapter
-import com.ameen.trianglzchallenge.presentation.adapter.HomeMovieLoadStateAdapter
 import com.ameen.trianglzchallenge.presentation.extention.hide
 import com.ameen.trianglzchallenge.presentation.extention.show
+import com.ameen.trianglzchallenge.presentation.extention.showToast
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
+import retrofit2.HttpException
+import java.io.IOException
 
 @AndroidEntryPoint
 class HomeFragment : Fragment() {
@@ -60,12 +61,15 @@ class HomeFragment : Fragment() {
             homeViewModel.movieDataList.collectLatest {
                 when (it) {
                     is ResultWrapper.Success -> {
+
+                        hideRetryButton()
+
                         it.value.collectLatest {
                             recAdapter.submitData(it)
                         }
                     }
                     is ResultWrapper.Error -> {
-                        Toast.makeText(requireContext(), it.error, Toast.LENGTH_SHORT).show()
+                        //requireContext().showToast(it.error)
                     }
                 }
             }
@@ -80,10 +84,11 @@ class HomeFragment : Fragment() {
             recAdapter = HomeMovieAdapter()
 
             binding.topMovieRecycler.apply {
-                adapter = recAdapter.withLoadStateHeaderAndFooter(
-                    header = HomeMovieLoadStateAdapter { recAdapter.retry() },
-                    footer = HomeMovieLoadStateAdapter { recAdapter.retry() }
-                )
+                adapter = recAdapter
+//                adapter = recAdapter.withLoadStateHeaderAndFooter(
+//                    header = HomeMovieLoadStateAdapter { recAdapter.retry() },
+//                    footer = HomeMovieLoadStateAdapter { recAdapter.retry() }
+//                )
                 layoutManager =
                     GridLayoutManager(requireContext(), RECYCLER_VIEW_GRID_SPAN_SIZE)
             }
@@ -98,9 +103,10 @@ class HomeFragment : Fragment() {
             handleSort()
 
             recAdapter.addLoadStateListener { loadState ->
-                if (loadState.refresh is LoadState.Loading || loadState.append is LoadState.Loading)
+                if (loadState.refresh is LoadState.Loading || loadState.append is LoadState.Loading) {
+                    hideRetryButton()
                     binding.loadingProgress.show()
-                else {
+                } else {
                     binding.loadingProgress.hide()
 
                     val errorState = when {
@@ -109,15 +115,44 @@ class HomeFragment : Fragment() {
                         loadState.refresh is LoadState.Error -> loadState.refresh as LoadState.Error
                         else -> null
                     }
-                    errorState?.let {
-                        Toast.makeText(requireContext(), it.error.message, Toast.LENGTH_LONG)
-                            .show()
+
+                    when (errorState?.error) {
+                        is IOException -> {
+                            requireContext().showToast(resources.getString(R.string.no_internet))
+                            showRetryButton(resources.getString(R.string.no_internet))
+                        }
+                        is HttpException -> {
+                            requireContext().showToast(resources.getString(R.string.some_error))
+                            showRetryButton(resources.getString(R.string.some_error))
+                        }
                     }
                 }
             }
 
         }
 
+    }
+
+
+    private fun showRetryButton(errorText: String) {
+        binding.loadingProgress.hide()
+
+        binding.footerContainer.show()
+        binding.textError.apply {
+            text = errorText
+            show()
+        }
+
+        binding.retryButton.show()
+        binding.retryButton.setOnClickListener {
+            recAdapter.retry()
+        }
+    }
+
+    private fun hideRetryButton() {
+        binding.footerContainer.hide()
+        binding.textError.hide()
+        binding.retryButton.hide()
     }
 
     private fun setChipCheck() {
